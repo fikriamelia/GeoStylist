@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClimaFit - Smart Weather Stylist</title>
+    <!-- Tailwind CSS v4 -->
+    <script src="https://jsdelivr.net"></script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md border border-slate-100">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">🌤️ ClimaFit</h1>
+            <p class="text-sm text-slate-500 font-medium">Smart Weather Stylist App</p>
+        </div>
+
+        <!-- Form Input -->
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Kota Asal</label>
+                <input id="city" type="text" placeholder="Contoh: Jakarta atau London" 
+                       class="w-full border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-700 transition">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Warna Baju Idaman</label>
+                <input id="color" type="text" placeholder="Contoh: hitam, putih, denim" 
+                       class="w-full border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-700 transition">
+            </div>
+            <button onclick="getOutfit()" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-[0.98]">
+                Cari Outfit Cocok
+            </button>
+        </div>
+
+        <!-- Area Hasil (Default Tersembunyi) -->
+        <div id="result" class="mt-6 border-t border-slate-100 pt-5 hidden animate-fade-in">
+            <div class="bg-slate-50 p-4 rounded-xl mb-4">
+                <p id="info" class="text-sm text-slate-700 leading-relaxed font-medium"></p>
+            </div>
+            <div class="relative group">
+                <img id="outfit-img" src="" alt="Rekomendasi Outfit" 
+                     class="rounded-xl w-full h-72 object-cover shadow-sm bg-slate-200">
+            </div>
+        </div>
+    </div>
+
+    <!-- Logika Aplikasi -->
+    <script>
+        // GANTI DENGAN API KEY ANDA YANG ASLI
+        const WEATHER_KEY = 'MASUKKAN_API_KEY_OPENWEATHER_ANDA';
+        const UNSPLASH_KEY = 'MASUKKAN_API_KEY_UNSPLASH_ANDA';
+
+        async function getOutfit() {
+            const city = document.getElementById('city').value.trim();
+            const color = document.getElementById('color').value.trim() || 'casual';
+            const resultDiv = document.getElementById('result');
+            const infoText = document.getElementById('info');
+            const outfitImg = document.getElementById('outfit-img');
+
+            if (!city) return alert('Silakan masukkan nama kota terlebih dahulu!');
+
+            try {
+                // 1. Ambil Data Cuaca Real-time
+                const wRes = await fetch(`https://openweathermap.org{city}&appid=${WEATHER_KEY}&units=metric`);
+                if (!wRes.ok) throw new Error('Kota tidak ditemukan');
+                const wData = await wRes.json();
+                
+                const temp = Math.round(wData.main.temp);
+                const country = wData.sys.country;
+                let style = "";
+
+                // 2. Logika Pintar Adaptasi Negara (Geo-Aware)
+                if (country === "ID") {
+                    // Logika Iklim Tropis Indonesia
+                    style = temp <= 23 ? "hoodie tebal hangat" : "kaos katun adem santai";
+                } else {
+                    // Logika Iklim Subtropis/Eropa (Contoh: London, New York)
+                    if (temp <= 15) {
+                        style = "winter coat mantel tebal hangat";
+                    } else if (temp > 15 && temp <= 23) {
+                        style = "casual spring outfit pakaian musim semi ringan";
+                    } else {
+                        style = "summer clothes pakaian musim panas santai";
+                    }
+                }
+
+                // 3. Cari Foto Real-Time dari Unsplash API
+                const query = `${color} ${style} aesthetic outfit fashion`;
+                const imgRes = await fetch(`https://unsplash.com{encodeURIComponent(query)}&client_id=${UNSPLASH_KEY}&per_page=1`);
+                const imgData = await imgRes.json();
+
+                // 4. Render Hasil ke Layar
+                infoText.innerHTML = `📍 <strong>${wData.name} (${country})</strong> saat ini bersuhu <strong>${temp}°C</strong>.<br>✨ Rekomendasi gaya lokal: <span class="text-blue-600 font-bold">${style} warna ${color}</span>.`;
+                outfitImg.src = imgData.results[0]?.urls?.regular || 'https://unsplash.com';
+                
+                // Tampilkan container hasil
+                resultDiv.classList.remove('hidden');
+            } catch (err) {
+                alert('Gagal mengambil data! Pastikan nama kota benar dan API Key sudah Anda pasang dengan benar.');
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>
